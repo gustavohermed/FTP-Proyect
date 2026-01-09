@@ -1,0 +1,77 @@
+---
+- hosts: all
+  become: yes
+  tasks:
+    - name: Instalar vsftpd
+      apt:
+        name: vsftpd
+        state: present
+        update_cache: yes
+
+    - name: Crear directorio FTP
+      file:
+        path: /srv/ftp
+        state: directory
+        mode: '0755'
+
+    - name: Crear mensaje de bienvenida
+      copy:
+        dest: /srv/ftp/INFORMACION.txt
+        content: |
+          --
+          -- Servidor anónimo
+          -- Máximo de 200 conexiones activas simultáneas.
+          -- Ancho de banda de 50KB por usuario
+          -- Timeout de inactividad de 30 segundos
+          --
+
+    - name: Configurar vsftpd
+      copy:
+        dest: /etc/vsftpd.conf
+        content: |
+          # Configuración básica
+          listen=YES
+          listen_ipv6=NO
+          
+          # Mensaje de bienvenida
+          ftpd_banner=-- Mirror de Opensuse para 'sistema.sol'
+          dirmessage_enable=YES
+          message_file=INFORMACION.txt
+          
+          # Acceso
+          anonymous_enable=YES
+          local_enable=NO
+          
+          # Permisos
+          write_enable=NO
+          anon_upload_enable=NO
+          
+          # Límites
+          max_clients=200
+          anon_max_rate=51200
+          idle_session_timeout=30
+          data_connection_timeout=120
+          
+          # Directorio raíz
+          anon_root=/srv/ftp
+          
+          # Modo pasivo
+          pasv_enable=YES
+          pasv_min_port=40000
+          pasv_max_port=50000
+          
+          # Logs
+          xferlog_enable=YES
+      notify: restart vsftpd
+
+    - name: Iniciar servicio
+      systemd:
+        name: vsftpd
+        enabled: yes
+        state: started
+
+  handlers:
+    - name: restart vsftpd
+      systemd:
+        name: vsftpd
+        state: restarted
