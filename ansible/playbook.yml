@@ -1,74 +1,91 @@
 ---
-- hosts: all
+- name: Configure anonymous FTP server
+  hosts: ftp_anonymous
   become: yes
+  
   tasks:
-    - name: Instalar vsftpd
+    - name: Update packages and install vsftpd
       apt:
         name: vsftpd
         state: present
         update_cache: yes
+        cache_valid_time: 3600
 
-    - name: Crear directorio FTP
+    - name: Create FTP root directory
       file:
         path: /srv/ftp
         state: directory
         mode: '0755'
+        owner: root
+        group: root
 
-    - name: Crear mensaje de bienvenida
+    - name: Create welcome message file
       copy:
-        dest: /srv/ftp/INFORMACION.txt
+        dest: /srv/ftp/WELCOME.txt
         content: |
           --
-          -- Servidor anónimo
-          -- Máximo de 200 conexiones activas simultáneas.
-          -- Ancho de banda de 50KB por usuario
-          -- Timeout de inactividad de 30 segundos
+          -- Anonymous server
+          -- Maximum 200 simultaneous active connections
+          -- Bandwidth limit: 50KB per user
+          -- Inactivity timeout: 30 seconds
           --
+        owner: root
+        group: root
+        mode: '0644'
 
-    - name: Configurar vsftpd
+    - name: Configure vsftpd
       copy:
         dest: /etc/vsftpd.conf
         content: |
-          # Configuración básica
+          # Basic configuration
           listen=YES
           listen_ipv6=NO
           
-          # Mensaje de bienvenida
+          # Welcome banner
           ftpd_banner=-- Mirror de Opensuse para 'sistema.sol'
           dirmessage_enable=YES
-          message_file=INFORMACION.txt
+          message_file=WELCOME.txt
           
-          # Acceso
+          # Access control
           anonymous_enable=YES
           local_enable=NO
+          no_anon_password=YES
           
-          # Permisos
+          # Permissions - no write access for anonymous users
           write_enable=NO
           anon_upload_enable=NO
+          anon_mkdir_write_enable=NO
+          anon_other_write_enable=NO
           
-          # Límites
+          # Connection limits
           max_clients=200
-          anon_max_rate=51200
+          max_per_ip=10
+          anon_max_rate=51200  # 50KB in bytes
+          
+          # Timeout settings
           idle_session_timeout=30
           data_connection_timeout=120
           
-          # Directorio raíz
+          # Anonymous user root directory
           anon_root=/srv/ftp
           
-          # Modo pasivo
+          # Passive mode configuration
           pasv_enable=YES
           pasv_min_port=40000
           pasv_max_port=50000
           
-          # Logs
+          # Logging
           xferlog_enable=YES
+          xferlog_file=/var/log/vsftpd.log
+          xferlog_std_format=YES
       notify: restart vsftpd
 
-    - name: Iniciar servicio
+    - name: Ensure vsftpd service is enabled and running
       systemd:
         name: vsftpd
         enabled: yes
         state: started
+        daemon_reload: yes
 
   handlers:
     - name: restart vsftpd
