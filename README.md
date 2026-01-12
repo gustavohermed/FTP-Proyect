@@ -65,13 +65,13 @@ ftp 192.168.56.10
 ls
 
 # Download welcome file
-get INFORMACION.txt
+get WELCOME.txt
 
 # Try to upload a file (should fail)
-put testfile.txt
+put <anyfile>.txt
 
 # Try to create directory (should fail)
-mkdir testdir
+mkdir <filename>
 ```
 
 ### (Optional). Shut down and unistallation:
