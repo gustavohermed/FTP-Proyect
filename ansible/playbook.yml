@@ -1,6 +1,6 @@
 ---
 - name: Configure anonymous FTP server
-  hosts: ftp_anonymous
+  hosts: ftp-servers
   become: yes
   
   tasks:
