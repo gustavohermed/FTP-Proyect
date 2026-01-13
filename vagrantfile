@@ -1,0 +1,20 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/bookworm64"
+  config.vm.hostname = "anonymous-ftp"
+  
+  # IP para FTP
+  config.vm.network "private_network", ip: "192.168.56.10"
+  
+  # Puerto SSH fijo para que Ansible funcione
+  config.vm.network "forwarded_port", guest: 22, host: 2222
+  
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = "512"
+    vb.name = "anonymous-ftp"
+  end
+  
+  # Ansible con archivo hosts
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "ansible/playbook.yml"
+  end
+end
