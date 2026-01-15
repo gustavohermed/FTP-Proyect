@@ -40,12 +40,11 @@ Vagrant.configure("2") do |config|
       vb.cpus = 1
     end
 
-    # Minimum provision
-    secure.vm.provision "shell", inline: <<-SHELL
-      apt update
-      apt install -y vsftpd openssl ftp
-    SHELL
+    # provision
+    secure.vm.provision "ansible" do |ansible|
+    ansible.playbook = "ansible/playbook_secure.yml"
   end
+end
 
 end
 
