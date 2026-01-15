@@ -23,15 +23,18 @@
       force: no
 
   # 3. Create local users
+  # 3. Create local users with password
   - name: Create FTP users
     user:
       name: "{{ item }}"
       create_home: yes
       shell: /bin/bash
+      password: "{{ 'ftp123' | password_hash('sha512') }}"
     loop:
       - luis
       - maria
       - miguel
+
 
   # 4. Create test files
   - name: Create files for luis
@@ -107,16 +110,24 @@
         # Active FTP
         connect_from_port_20=YES
 
-        # FTPS
+        # FTPS configuration (compatible with FileZilla)
         ssl_enable=YES
         allow_anon_ssl=YES
+
+        # Only login is forced to SSL
         force_local_logins_ssl=YES
-        force_local_data_ssl=YES
-        ssl_sslv3=YES
+        force_local_data_ssl=NO
+
+        # TLS only
         ssl_tlsv1=YES
+        ssl_sslv3=NO
+
         rsa_cert_file=/etc/ssl/certs/example.test.pem
         rsa_private_key_file=/etc/ssl/private/example.test.key
+
+        # Required for many FTPS clients
         require_ssl_reuse=NO
+
     notify: restart vsftpd
 
   # 7. Chroot exception
