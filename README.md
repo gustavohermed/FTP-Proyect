@@ -63,8 +63,7 @@ vagrant halt
 vagrant destroy -f
 ```
 
-
-  
+<br>
 ## That's all folks.
 Thanks for readding, and we hope it works for you all too!
 
