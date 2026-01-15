@@ -1,21 +1,52 @@
 Vagrant.configure("2") do |config|
-  config.vm.box = "debian/bookworm64"
-  config.vm.hostname = "anonymous-ftp"
-  
-  # IP for FTP
-  config.vm.network "private_network", ip: "192.168.56.10"
-  
-  # Fixed SSH port for Ansible to work
-  config.vm.network "forwarded_port", guest: 22, host: 2222
-  
-  config.vm.provider "virtualbox" do |vb|
-    vb.memory = "512"
-    vb.name = "anonymous-ftp"
+
+  config.vm.define "anonymous-ftp" do |anon|
+    anon.vm.box = "debian/bookworm64"
+    anon.vm.hostname = "anonymous-ftp"
+
+    # IP for FTP
+    anon.vm.network "private_network", ip: "192.168.56.10"
+
+    # Fixed SSH port for Ansible to work
+    anon.vm.network "forwarded_port", guest: 22, host: 2222
+
+    anon.vm.provider "virtualbox" do |vb|
+      vb.memory = "512"
+      vb.name = "anonymous-ftp"
+    end
+
+    # Ansible with playbook
+    anon.vm.provision "ansible" do |ansible|
+      ansible.playbook = "ansible/playbook.yml"
+    end
   end
-  
-  # Ansible with playbook
-  config.vm.provision "ansible" do |ansible|
-    ansible.playbook = "ansible/playbook.yml"
+
+  config.vm.define "ftp-secure" do |secure|
+    secure.vm.box = "debian/bookworm64"
+    secure.vm.hostname = "ftp.example.test"
+
+    # IP for FTP secure
+    secure.vm.network "private_network", ip: "192.168.56.20"
+
+    # SSH independent
+    secure.vm.network "forwarded_port",
+      guest: 22,
+      host: 2223,
+      id: "ssh"
+
+    secure.vm.provider "virtualbox" do |vb|
+      vb.name = "ftp-secure"
+      vb.memory = 768
+      vb.cpus = 1
+    end
+
+    # Minimum provision
+    secure.vm.provision "shell", inline: <<-SHELL
+      apt update
+      apt install -y vsftpd openssl ftp
+    SHELL
   end
+
 end
+
 
