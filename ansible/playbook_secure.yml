@@ -1,78 +1,45 @@
 ---
-- name: Punto 4 y 5 - Instalación y configuración de vsftpd
+- name: Punto 6 - Configuración FTP Seguro (FTPS)
   hosts: all
   become: yes
 
   tasks:
 
   # ==========================================================
-  # PUNTO 4 - INSTALACIÓN Y PREPARACIÓN DEL SERVIDOR FTP
+  # 1. Install required packages
   # ==========================================================
-
-  # 1. Install vsftpd
-  - name: Install vsftpd
+  - name: Install vsftpd and openssl
     apt:
-      name: vsftpd
+      name:
+        - vsftpd
+        - openssl
       state: present
       update_cache: yes
 
-  # 2. Ensure /srv/ftp directory exists with correct ownership
-  - name: Ensure /srv/ftp directory permissions
-    file:
-      path: /srv/ftp
-      state: directory
-      owner: root
-      group: ftp
-      mode: '0755'
-
-  # 3. Backup vsftpd configuration
-  - name: Backup vsftpd.conf
-    copy:
-      src: /etc/vsftpd.conf
-      dest: /etc/vsftpd.conf.bak
-      remote_src: yes
-      force: no
-
-  # 4. Create local users with password
-  - name: Create local users with password
-    user:
-      name: "{{ item }}"
-      create_home: yes
-      shell: /bin/bash
-      password: "{{ 'ftp123' | password_hash('sha512') }}"
-    loop:
-      - luis
-      - maria
-      - miguel
-
-  # 5. Create files for luis
-  - name: Create files for luis
-    copy:
-      dest: "/home/luis/{{ item }}"
-      content: "Archivo {{ item }}"
-      owner: luis
-      group: luis
-    loop:
-      - luis1.txt
-      - luis2.txt
-
-  # 6. Create files for maria
-  - name: Create files for maria
-    copy:
-      dest: "/home/maria/{{ item }}"
-      content: "Archivo {{ item }}"
-      owner: maria
-      group: maria
-    loop:
-      - maria1.txt
-      - maria2.txt
+  # ==========================================================
+  # 2. Generate SSL private key
+  # ==========================================================
+  - name: Generate private key
+    command: openssl genrsa -out /etc/ssl/private/example.test.key 2048
+    args:
+      creates: /etc/ssl/private/example.test.key
 
   # ==========================================================
-  # PUNTO 5 - CONFIGURACIÓN FTP
+  # 3. Generate self-signed certificate
   # ==========================================================
+  - name: Generate SSL certificate
+    command: >
+      openssl req -x509 -nodes -days 365
+      -key /etc/ssl/private/example.test.key
+      -out /etc/ssl/certs/example.test.pem
+      -subj "/CN=ftp.example.test"
+    args:
+      creates: /etc/ssl/certs/example.test.pem
 
-  # 7. Configure vsftpd.conf (clean + commented)
-  - name: Configure vsftpd according to requirements
+  # ==========================================================
+  # 4. Configure vsftpd for FTPS
+  # ==========================================================
+  - name: Configure vsftpd FTPS
     copy:
       dest: /etc/vsftpd.conf
       content: |
@@ -88,7 +55,7 @@
         ftpd_banner=--- Welcome to the FTP server of 'sistema.sol'---
 
         #
-        # 3. Anonymous users configuration
+        # 3. Anonymous users
         #
         anonymous_enable=YES
         no_anon_password=YES
@@ -98,64 +65,66 @@
         anon_other_write_enable=NO
 
         #
-        # 4. Message for anonymous users
-        #
-        dirmessage_enable=YES
-        message_file=.message
-
-        #
-        # 5. Local users configuration
+        # 4. Local users
         #
         local_enable=YES
         write_enable=YES
 
         #
-        # 6. Chroot configuration
+        # 5. Chroot configuration
         #
         chroot_local_user=YES
         chroot_list_enable=YES
         chroot_list_file=/etc/vsftpd.chroot_list
 
         #
-        # 7. Connection limits
+        # 6. Limits
         #
         max_clients=15
         idle_session_timeout=720
 
         #
-        # 8. Bandwidth limits
+        # 7. Bandwidth limits
         #
         local_max_rate=5242880
         anon_max_rate=2097152
 
         #
-        # 9. Active FTP configuration
+        # 8. Active FTP
         #
         connect_from_port_20=YES
 
         #
-        # 10. Logging
+        # 9. FTPS configuration
         #
-        xferlog_enable=YES
+        ssl_enable=YES
+        allow_anon_ssl=YES
+        force_local_logins_ssl=YES
+        force_local_data_ssl=YES
+
+        ssl_tlsv1=YES
+        ssl_sslv3=YES
+
+        rsa_cert_file=/etc/ssl/certs/example.test.pem
+        rsa_private_key_file=/etc/ssl/private/example.test.key
+
+        #
+        # 10. Compatibility
+        #
+        require_ssl_reuse=NO
     notify: restart vsftpd
 
-  # 8. Create anonymous welcome message
-  - name: Create anonymous welcome message
-    copy:
-      dest: /srv/ftp/.message
-      content: |
-        ---You have accessed the public directory server of 'sistema.sol'---
-      owner: root
-      group: ftp
-      mode: '0644'
-
-  # 9. Configure chroot exception for maria
-  - name: Configure chroot exceptions
+  # ==========================================================
+  # 5. Chroot exception
+  # ==========================================================
+  - name: Configure chroot exception for maria
     copy:
       dest: /etc/vsftpd.chroot_list
       content: maria
 
-  # 10. Ensure vsftpd is running
+  # ==========================================================
+  # 6. Ensure vsftpd running
+  # ==========================================================
   - name: Ensure vsftpd is running
     systemd:
       name: vsftpd
@@ -167,3 +136,4 @@
       systemd:
         name: vsftpd
         state: restarted
+
