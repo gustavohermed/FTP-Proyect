@@ -96,68 +96,81 @@ If the problem didn't solve, try checking if your 21 port is listening in your h
 ss -tuln | grep :21
 ```
 ### 2. Problems with the SSL certifie on graphic client:
-If, while trying to establish connection with a graphic client, like fileZilla, you encounter an error about SSL or TLS; check on the official web page of that client, the compatible SSL or TLS versions. Then, in the VMs, go to /etc/vsftpd.conf and change the configuration for a proper ones (the versions stablished rightnow are for the ultimate version of fileZilla client).
+If, while trying to establish connection with a graphic client, like fileZilla, you encounter an error about SSL or TLS; check on the official web page of that client, the compatible SSL or TLS versions. 
+Then, in the VMs, go to /etc/vsftpd.conf and change the configuration for a proper one (the compatibility versions stablished rightnow are for the ultimate version of fileZilla_3.69.5)
 
 ## Documentation.
 
-![ vsftpd service active](./screenshots/Screenshot_14.png)
+![ vsftpd service active](./screenshots/Screenshot_14.png)<br>
 Before doing any testing, and after the vagrant up has finished, we checked that our VMs, vsftpd service, is working properly.
 <br>
+<br>
 
-![port 21 active](./screenshots/Screenshot_15.png)
+![port 21 active](./screenshots/Screenshot_15.png)<br>
 And ofcourse we checked that the 21 port of our host machine is active and listening. 
+<br>
 <br>
 
 ### Anonymous FTP server:
 
-![conection to the server](./screenshots/Screenshot_1.png)
+![conection to the server](./screenshots/Screenshot_1.png)<br>
 After configuring and setting up the anonymous server, we tried to connect trough the command line of our host, with anon user; this being successfully.  
 <br>
+<br>
 
-![read permisions](./screenshots/Screenshot_2.png)
+![read permisions](./screenshots/Screenshot_2.png)<br>
 Then, we tried the read permisions, making sure they work properly.
 <br>
+<br>
 
-![write permisions](./screenshots/Screenshot_3.png)
+![write permisions](./screenshots/Screenshot_3.png)<br>
 Now, trying the denied write permiesion, trying to upload a file.
 <br>
-
-![trying donwload](./screenshots/Screenshot_4.png)
-Also, we tried that we can donwload files normaly...
 <br>
 
-![fileZilla conection](./screenshots/Screenshot_5.png)
+![trying donwload](./screenshots/Screenshot_4.png)<br>
+Also, we tried that we can donwload files normaly...
+<br>
+<br>
+
+![fileZilla conection](./screenshots/Screenshot_5.png)<br>
 And finaly, we tried connecting to the server trough "fileZilla".
+<br>
 <br>
 
 ### Secure FTP server:
 
-![trying chroot jail (maria)](./screenshots/Screenshot_6.png)
+![trying chroot jail (maria)](./screenshots/Screenshot_6.png)<br>
 After configuring and setting up the secure server, we connect trough the command line of our host, with "maria" user credentials, and test that she isn't chroot jailed.
 <br>
+<br>
 
-![trying chroot jail (luis)](./screenshots/Screenshot_7.png)
+![trying chroot jail (luis)](./screenshots/Screenshot_7.png)<br>
 Then, change into "luis" user, and test that he, indeed, is chroot jailed.
+<br>
 <br>
 
 ![fileZilla stablishing site](./screenshots/Screenshot_8.png)
-![fileZilla conection](./screenshots/Screenshot_9.png)
+![fileZilla conection](./screenshots/Screenshot_9.png)<br>
 Now, we connected to fileZilla, firts stablishing the site, and then loging in with the user credentials...
 <br>
+<br>
 
-![TLS certificate](./screenshots/Screenshot_10.png)
+![TLS certificate](./screenshots/Screenshot_10.png)<br>
 Here we can see the certificate details.
+<br>
 <br>
 
 ![download 1](./screenshots/Screenshot_11.png)
-![download 2](./screenshots/Screenshot_12.png)
+![download 2](./screenshots/Screenshot_12.png)<br>
 After the success login, we tried donwloading a file normaly.
 <br>
-
-![download 2](./screenshots/Screenshot_13.png)
-And finally, we tried loging in with an anon user.
 <br>
 
+![download 2](./screenshots/Screenshot_13.png)<br>
+And finally, we tried loging in with an anon user.
+<br>
+<br>
 
 ## That's all folks.
 Thanks for readding, and we hope it works for you all too!
