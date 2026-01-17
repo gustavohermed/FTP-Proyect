@@ -1,7 +1,14 @@
 ---
-- name: Punto 6 - Configuración FTP Seguro (FTPS)
+- name: FTP and FTPS Server Configuration with vsftpd
   hosts: all
   become: yes
+
+  vars:
+    ftp_users:
+      - luis
+      - maria
+      - miguel
+    ftp_password: "{{ 'SecurePass123' | password_hash('sha512') }}"
 
   tasks:
 
@@ -17,15 +24,49 @@
       update_cache: yes
 
   # ==========================================================
-  # 2. Generate SSL private key
+  # 2. Create local FTP users
   # ==========================================================
-  - name: Generate private key
+  - name: Create local users
+    user:
+      name: "{{ item }}"
+      password: "{{ ftp_password }}"
+      shell: /bin/bash
+      create_home: yes
+    loop: "{{ ftp_users }}"
+
+  # ==========================================================
+  # 3. Create test files for users
+  # ==========================================================
+  - name: Create test files for luis
+    become_user: luis
+    shell: |
+      touch ~/luis1.txt ~/luis2.txt
+
+  - name: Create test files for maria
+    become_user: maria
+    shell: |
+      touch ~/maria1.txt ~/maria2.txt
+
+  # ==========================================================
+  # 4. Backup original vsftpd configuration
+  # ==========================================================
+  - name: Backup vsftpd.conf
+    copy:
+      src: /etc/vsftpd.conf
+      dest: /etc/vsftpd.conf.bak
+      remote_src: yes
+      force: no
+
+  # ==========================================================
+  # 5. Generate SSL private key
+  # ==========================================================
+  - name: Generate SSL private key
     command: openssl genrsa -out /etc/ssl/private/example.test.key 2048
     args:
       creates: /etc/ssl/private/example.test.key
 
   # ==========================================================
-  # 3. Generate self-signed certificate
+  # 6. Generate self-signed SSL certificate
   # ==========================================================
   - name: Generate SSL certificate
     command: >
@@ -37,9 +78,9 @@
       creates: /etc/ssl/certs/example.test.pem
 
   # ==========================================================
-  # 4. Configure vsftpd for FTPS
+  # 7. Configure vsftpd (FTP + FTPS)
   # ==========================================================
-  - name: Configure vsftpd FTPS
+  - name: Configure vsftpd service
     copy:
       dest: /etc/vsftpd.conf
       content: |
@@ -55,17 +96,18 @@
         ftpd_banner=--- Welcome to the FTP server of 'sistema.sol'---
 
         #
-        # 3. Anonymous users
+        # 3. Anonymous access configuration
         #
         anonymous_enable=YES
-        no_anon_password=YES
         anon_root=/srv/ftp
+        anon_world_readable_only=YES
         anon_upload_enable=NO
         anon_mkdir_write_enable=NO
         anon_other_write_enable=NO
+        no_anon_password=YES
 
         #
-        # 4. Local users
+        # 4. Local users configuration
         #
         local_enable=YES
         write_enable=YES
@@ -78,10 +120,10 @@
         chroot_list_file=/etc/vsftpd.chroot_list
 
         #
-        # 6. Limits
+        # 6. Connection limits
         #
-        max_clients=15
         idle_session_timeout=720
+        max_clients=15
 
         #
         # 7. Bandwidth limits
@@ -90,7 +132,7 @@
         anon_max_rate=2097152
 
         #
-        # 8. Active FTP
+        # 8. Active FTP data port
         #
         connect_from_port_20=YES
 
@@ -115,17 +157,26 @@
     notify: restart vsftpd
 
   # ==========================================================
-  # 5. Chroot exception
+  # 8. Chroot exception (only maria)
   # ==========================================================
-  - name: Configure chroot exception for maria
+  - name: Configure chroot exception list
     copy:
       dest: /etc/vsftpd.chroot_list
       content: maria
 
   # ==========================================================
-  # 6. Ensure vsftpd running
+  # 9. Anonymous access message
   # ==========================================================
-  - name: Ensure vsftpd is running
+  - name: Configure anonymous welcome message
+    copy:
+      dest: /srv/ftp/.message
+      content: |
+        ---You have accessed the public directory server of 'sistema.sol'---
+
+  # ==========================================================
+  # 10. Ensure vsftpd is running
+  # ==========================================================
+  - name: Ensure vsftpd service is running
     systemd:
       name: vsftpd
       state: restarted
@@ -136,4 +187,3 @@
       systemd:
         name: vsftpd
         state: restarted
-
