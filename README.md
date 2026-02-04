@@ -44,6 +44,7 @@ Incompatibility because of ansible tool.
 ### 1. Install requirements:
 ```bash
 # install the necesary requirements previusly mentioned...
+sudo apt install vsftpd -y
 ```
 ### 2. Clone and run:
 ```bash
@@ -180,3 +181,205 @@ Thanks for readding, and we hope it works for you all too!
 - Daniel Rodríguez Cabello
 
 from 2º ASIR-B [[IES Zaidín Vergeles](https://www.ieszaidinvergeles.org/)].
+
+
+# Práctica FTP - Servidor FTP Anónimo y Seguro (vsftpd)
+
+Este documento describe la configuración de:
+
+1. Servidor **FTP Anónimo**
+2. Servidor **FTP Seguro (FTPS)** con usuarios locales y SSL
+
+---
+
+# 1️⃣ Servidor FTP Anónimo
+
+## Instalación
+
+```bash
+sudo apt install vsftpd -y
+```
+
+---
+
+## Crear archivo de bienvenida
+
+Crear un archivo dentro de:
+
+```bash
+/var/ftp
+```
+
+Normalmente:
+
+```bash
+WELCOME.txt
+```
+
+Escribir el mensaje que se mostrará al conectar.
+
+---
+
+## Copia de seguridad de la configuración
+
+```bash
+sudo cp /etc/vsftpd.conf /etc/vsftpd.conf.bak
+```
+
+---
+
+## Configuración de /etc/vsftpd.conf
+
+### Editar el archivo
+
+```bash
+sudo nano /etc/vsftpd.conf
+```
+
+### Parámetros principales
+
+```conf
+listen=YES
+listen_ipv6=NO
+
+anonymous_enable=YES
+local_enable=NO
+
+write_enable=NO
+anon_upload_enable=NO
+anon_mkdir_write_enable=NO
+
+anon_root=/var/ftp
+
+max_clients=200
+anon_max_rate=51200
+idle_session_timeout=30
+```
+
+### Explicación
+
+- listen=YES → Escucha por IPv4  
+- anonymous_enable=YES → Permite acceso anónimo  
+- local_enable=NO → No permite usuarios locales  
+- write_enable=NO → No permite escritura  
+- anon_upload_enable=NO → No permite subir archivos  
+- anon_mkdir_write_enable=NO → No permite crear directorios  
+- anon_root=/var/ftp → Directorio raíz del usuario anónimo  
+- max_clients=200 → Máximo de conexiones simultáneas  
+- anon_max_rate=51200 → Límite de velocidad  
+- idle_session_timeout=30 → Tiempo máximo inactivo  
+
+---
+
+## Reiniciar servicio
+
+```bash
+sudo systemctl restart vsftpd
+```
+
+---
+
+## Comprobar funcionamiento
+
+```bash
+systemctl status vsftpd
+```
+
+---
+
+## Probar conexión
+
+```bash
+ftp 192.168.56.10
+```
+
+Usuario:
+
+```bash
+anonymous
+```
+
+---
+
+# 2️⃣ Servidor FTP Seguro (FTPS)
+
+## Instalación de paquetes necesarios
+
+```bash
+sudo apt install vsftpd openssl -y
+```
+
+---
+
+## Crear usuario local
+
+```bash
+sudo useradd -m -s /bin/bash manolo
+sudo passwd manolo
+```
+
+---
+
+## Generar clave privada
+
+```bash
+sudo openssl genrsa -out /etc/ssl/private/example.test.key 2048
+```
+
+---
+
+## Generar certificado autofirmado
+
+```bash
+sudo openssl req -new -x509 -key /etc/ssl/private/example.test.key -out /etc/ssl/certs/example.test.crt
+```
+
+---
+
+## Configuración segura en /etc/vsftpd.conf
+
+### Editar configuración
+
+```bash
+sudo nano /etc/vsftpd.conf
+```
+
+### Activar usuarios locales y escritura
+
+```conf
+local_enable=YES
+write_enable=YES
+```
+
+### Activar SSL
+
+```conf
+ssl_enable=YES
+rsa_cert_file=/etc/ssl/certs/example.test.crt
+rsa_private_key_file=/etc/ssl/private/example.test.key
+```
+
+### Enjaular usuarios en su directorio home
+
+```conf
+chroot_local_user=YES
+allow_writeable_chroot=YES
+```
+
+### Mensaje de bienvenida
+
+```conf
+ftpd_banner=Bienvenido al servidor FTP seguro
+```
+
+---
+
+## Excepción de usuarios que NO estarán enjaulados
+
+Editar o crear:
+
+```bash
+/etc/vsftpd.chroot_list
+```
+
+Añadir dentro el nombre del usuario que no queremos enjaular.
